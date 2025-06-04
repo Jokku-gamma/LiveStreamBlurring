@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Protection Camera</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+        }
+        .video-container {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .video-feed {
+            width: 100%;
+            height: 480px;
+            background: #000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .video-feed img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .control-group {
+            margin-bottom: 25px;
+        }
+        .control-group h3 {
+            margin-top: 0;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            padding-bottom: 8px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider-label {
+            margin-left: 15px;
+            font-size: 18px;
+            vertical-align: super;
+        }
+        .intensity-control {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+        .intensity-control label {
+            margin-right: 15px;
+            width: 100px;
+        }
+        .intensity-control input {
+            flex: 1;
+        }
+        .intensity-value {
+            margin-left: 15px;
+            font-weight: bold;
+            min-width: 30px;
+        }
+        .status {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        @media (max-width: 900px) {
+            .content {
+                flex-direction: column;
+            }
+            .video-container, .controls {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Protection Camera</h1>
+        <p class="subtitle">Real-time face and license plate blurring</p>
+        
+        <div class="content">
+            <div class="video-container">
+                <div class="video-feed">
+                    <img src="{{ url_for('video_feed') }}" alt="Live Video Feed">
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Privacy Controls</h3>
+                    <div class="control-item">
+                        <label class="switch">
+                            <input type="checkbox" id="faceBlur" {{ 'checked' if settings.face_blur else '' }}>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="slider-label">Blur Faces</span>
+                    </div>
+                    
+                    <div class="control-item">
+                        <label class="switch">
+                            <input type="checkbox" id="plateBlur" {{ 'checked' if settings.plate_blur else '' }}>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="slider-label">Blur License Plates</span>
+                    </div>
+                    
+                    <div class="intensity-control">
+                        <label for="blurIntensity">Blur Intensity:</label>
+                        <input type="range" id="blurIntensity" min="5" max="99" step="2" 
+                               value="{{ settings.blur_intensity }}">
+                        <span class="intensity-value" id="intensityValue">{{ settings.blur_intensity }}</span>
+                    </div>
+                </div>
+                
+                <div class="status">
+                    <div class="status-item">
+                        <span>Camera Status:</span>
+                        <span id="cameraStatus">Active</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Face Detection:</span>
+                        <span id="faceStatus">{{ 'Enabled' if settings.face_blur else 'Disabled' }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Plate Detection:</span>
+                        <span id="plateStatus">{{ 'Enabled' if settings.plate_blur else 'Disabled' }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Processing:</span>
+                        <span id="processingStatus">Real-time</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Automatic Privacy Protection System | Made with Flask & OpenCV</p>
+        </div>
+    </div>
+    
+    <script>
+        // Update settings when controls change
+        document.getElementById('faceBlur').addEventListener('change', updateSettings);
+        document.getElementById('plateBlur').addEventListener('change', updateSettings);
+        document.getElementById('blurIntensity').addEventListener('input', function() {
+            document.getElementById('intensityValue').textContent = this.value;
+            updateSettings();
+        });
+        
+        function updateSettings() {
+            const settings = {
+                face_blur: document.getElementById('faceBlur').checked,
+                plate_blur: document.getElementById('plateBlur').checked,
+                blur_intensity: document.getElementById('blurIntensity').value
+            };
+            
+            // Update status indicators
+            document.getElementById('faceStatus').textContent = 
+                settings.face_blur ? 'Enabled' : 'Disabled';
+            document.getElementById('plateStatus').textContent = 
+                settings.plate_blur ? 'Enabled' : 'Disabled';
+            
+            // Send to server
+            fetch('/update_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+        }
+    </script>
+</body>
+</html>
