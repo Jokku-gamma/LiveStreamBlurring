@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Protection Camera</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <canvas id="outputCanvas" class="w-full rounded-lg mb-6"></canvas>
+    <video id="inputVideo" style="display:none;"></video> <!-- Hidden video element to capture stream -->
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -233,6 +237,13 @@
     </div>
     
     <script>
+
+
+        const inputVideo = document.getElementById('inputVideo');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const outputContext = outputCanvas.getContext('2d');
+        let socket;
+        let stream; 
         // Update settings when controls change
         document.getElementById('faceBlur').addEventListener('change', updateSettings);
         document.getElementById('plateBlur').addEventListener('change', updateSettings);
@@ -263,6 +274,70 @@
                 body: JSON.stringify(settings)
             });
         }
+
+        async function setupWebcam() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            inputVideo.srcObject = stream;
+            inputVideo.play();
+
+            // Adjust canvas size to match video stream
+            inputVideo.onloadedmetadata = () => {
+                outputCanvas.width = inputVideo.videoWidth;
+                outputCanvas.height = inputVideo.videoHeight;
+            };
+
+            // Setup WebSocket connection
+            // Use window.location.host for dynamic URL in Render
+            socket = io(`ws://${window.location.host}`); // Adjust if using HTTPS for wss://
+
+            socket.on('connect', () => {
+                console.log('Connected to WebSocket server');
+                sendVideoFrames(); // Start sending frames once connected
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from WebSocket server');
+            });
+
+            socket.on('processed_frame', (data) => {
+                // Receive base64 image data and draw on canvas
+                const img = new Image();
+                img.onload = () => {
+                    outputContext.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+                };
+                img.src = data;
+            });
+
+            socket.on('settings_updated', (newSettings) => {
+                // Optional: Update local UI based on server-side settings changes
+                console.log('Settings updated from server:', newSettings);
+            });
+
+        } catch (err) {
+            console.error('Error accessing webcam: ', err);
+            // Display an error message to the user
+            document.getElementById('loadingIndicator').textContent = 'Error accessing webcam. Please ensure it\'s connected and allowed.';
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            document.getElementById('loadingIndicator').classList.add('text-red-500');
+        }
+    }
+
+    function sendVideoFrames() {
+        if (!socket || !stream || socket.disconnected) return;
+
+        // Capture frame from the hidden video element and send
+        outputContext.drawImage(inputVideo, 0, 0, outputCanvas.width, outputCanvas.height);
+        const dataURL = outputCanvas.toDataURL('image/jpeg', 0.8); // Convert canvas to JPEG base64
+
+        socket.emit('video_frame', dataURL);
+
+        // Send frames at a regular interval (e.g., 30ms for ~30fps)
+        setTimeout(sendVideoFrames, 30);
+    }
+
+    // Call this function when the page loads
+    setupWebcam();
     </script>
 </body>
 </html>
