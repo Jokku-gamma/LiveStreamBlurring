@@ -10,7 +10,7 @@ from PIL import Image
 import io
 
 app=Flask(__name__)
-socketio=SocketIO(app,cors_allowed_origins='*',async_mode='eventlet')
+socketio=SocketIO(app,cors_allowed_origins='*',async_mode='eventlet',max_http_buffer_size=100 * 1024 * 1024)
 facenet=cv2.dnn.readNetFromCaffe(
     'deploy.prototxt',
     'res10_300x300_ssd_iter_140000.caffemodel'
@@ -92,7 +92,7 @@ def update_settings():
 
 @app.route('/')
 def index():
-    return render_template('templates/index.html',settings=blur_settings)
+    return render_template('index.html',settings=blur_settings)
 
 if __name__=="__main__":
     socketio.run(app,host='0.0.0.0',port=5000,debug=True)
