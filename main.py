@@ -92,7 +92,7 @@ def update_settings():
 
 @app.route('/')
 def index():
-    return render_template('templates/index.html',settings=blur_settings)
+    return render_template('index.html',settings=blur_settings)
 
 if __name__=="__main__":
     socketio.run(app,host='0.0.0.0',port=5000,debug=True)
