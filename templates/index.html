@@ -3,341 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Protection Camera</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-    <canvas id="outputCanvas" class="w-full rounded-lg mb-6"></canvas>
-    <video id="inputVideo" style="display:none;"></video> <!-- Hidden video element to capture stream -->
-
+    <title>Live Stream Blurring App (Client Webcam)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Custom styles to override Tailwind defaults or for specific elements */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
-            color: white;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 2rem;
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        .card {
+            background-color: #2d3748; /* Darker card background */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
         }
-        .subtitle {
-            text-align: center;
-            margin-bottom: 30px;
-            opacity: 0.8;
-        }
-        .content {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
+        input[type="range"] {
+            -webkit-appearance: none;
             width: 100%;
-        }
-        .video-container {
-            flex: 1;
-            min-width: 500px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        .video-feed {
-            width: 100%;
-            height: 480px;
-            background: #000;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .video-feed img {
-            max-width: 100%;
-            max-height: 100%;
-        }
-        .controls {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        .control-group {
-            margin-bottom: 25px;
-        }
-        .control-group h3 {
-            margin-top: 0;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-            padding-bottom: 8px;
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #2196F3;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        .slider-label {
-            margin-left: 15px;
-            font-size: 18px;
-            vertical-align: super;
-        }
-        .intensity-control {
-            display: flex;
-            align-items: center;
-            margin-top: 15px;
-        }
-        .intensity-control label {
-            margin-right: 15px;
-            width: 100px;
-        }
-        .intensity-control input {
-            flex: 1;
-        }
-        .intensity-value {
-            margin-left: 15px;
-            font-weight: bold;
-            min-width: 30px;
-        }
-        .status {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .status-item:last-child {
-            border-bottom: none;
-        }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
+            height: 8px;
+            background: #4a5568; /* Slider track color */
+            outline: none;
             opacity: 0.7;
-            font-size: 14px;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 9999px; /* Fully rounded track */
         }
-        @media (max-width: 900px) {
-            .content {
-                flex-direction: column;
-            }
-            .video-container, .controls {
-                min-width: 100%;
-            }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #63b3ed; /* Slider thumb color */
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #63b3ed;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        input[type="checkbox"] {
+            /* Basic styling for checkbox */
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #a0aec0; /* Light border */
+            border-radius: 0.25rem;
+            outline: none;
+            cursor: pointer;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+            position: relative;
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: #63b3ed; /* Blue background when checked */
+            border-color: #63b3ed;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✔'; /* Checkmark symbol */
+            color: white;
+            font-size: 0.8rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Ensure canvas responsiveness */
+        #outputCanvas {
+            width: 100%;
+            height: auto;
+            border-radius: 0.75rem;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Subtle shadow for video */
+            background-color: #000; /* Black background for canvas before stream starts */
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Privacy Protection Camera</h1>
-        <p class="subtitle">Real-time face and license plate blurring</p>
-        
-        <div class="content">
-            <div class="video-container">
-                <div class="video-feed">
-                    <img src="{{ url_for('video_feed') }}" alt="Live Video Feed">
-                </div>
-            </div>
-            
-            <div class="controls">
-                <div class="control-group">
-                    <h3>Privacy Controls</h3>
-                    <div class="control-item">
-                        <label class="switch">
-                            <input type="checkbox" id="faceBlur" {{ 'checked' if settings.face_blur else '' }}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="slider-label">Blur Faces</span>
-                    </div>
-                    
-                    <div class="control-item">
-                        <label class="switch">
-                            <input type="checkbox" id="plateBlur" {{ 'checked' if settings.plate_blur else '' }}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="slider-label">Blur License Plates</span>
-                    </div>
-                    
-                    <div class="intensity-control">
-                        <label for="blurIntensity">Blur Intensity:</label>
-                        <input type="range" id="blurIntensity" min="5" max="99" step="2" 
-                               value="{{ settings.blur_intensity }}">
-                        <span class="intensity-value" id="intensityValue">{{ settings.blur_intensity }}</span>
-                    </div>
-                </div>
-                
-                <div class="status">
-                    <div class="status-item">
-                        <span>Camera Status:</span>
-                        <span id="cameraStatus">Active</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Face Detection:</span>
-                        <span id="faceStatus">{{ 'Enabled' if settings.face_blur else 'Disabled' }}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Plate Detection:</span>
-                        <span id="plateStatus">{{ 'Enabled' if settings.plate_blur else 'Disabled' }}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Processing:</span>
-                        <span id="processingStatus">Real-time</span>
-                    </div>
-                </div>
-            </div>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container flex flex-col lg:flex-row gap-8">
+        <!-- Video Stream Section -->
+        <div class="lg:w-3/4 w-full card flex flex-col items-center">
+            <h1 class="text-3xl font-bold mb-6 text-center">Live Video Stream (Your Webcam)</h1>
+            <!-- Hidden video element to capture raw stream -->
+            <video id="inputVideo" playsinline autoplay muted style="display:none;"></video>
+            <!-- Canvas to display processed stream -->
+            <canvas id="outputCanvas" class="w-full rounded-lg mb-6"></canvas>
+            <div id="loadingIndicator" class="text-center text-gray-400">Loading webcam...</div>
         </div>
-        
-        <div class="footer">
-            <p>Automatic Privacy Protection System | Made with Flask & OpenCV</p>
+
+        <!-- Controls Section -->
+        <div class="lg:w-1/4 w-full card flex flex-col gap-6">
+            <h2 class="text-2xl font-semibold mb-4 text-center">Blur Settings</h2>
+
+            <!-- Face Blur Toggle -->
+            <div class="flex items-center justify-between">
+                <label for="faceBlur" class="text-lg">Face Blur</label>
+                <input type="checkbox" id="faceBlur" class="toggle-checkbox"
+                       {% if settings.face_blur %}checked{% endif %}>
+            </div>
+
+            <!-- Plate Blur Toggle -->
+            <div class="flex items-center justify-between">
+                <label for="plateBlur" class="text-lg">Plate Blur</label>
+                <input type="checkbox" id="plateBlur" class="toggle-checkbox"
+                       {% if settings.plate_blur %}checked{% endif %}>
+            </div>
+
+            <!-- Blur Intensity Slider -->
+            <div>
+                <label for="blurIntensity" class="block text-lg mb-2">Blur Intensity: <span id="intensityValue">{{ settings.blur_intensity }}</span></label>
+                <!-- Set min to 1, max to 99, step to 2 to ensure odd values for kernel size -->
+                <input type="range" id="blurIntensity" min="1" max="99" step="2"
+                       value="{{ settings.blur_intensity }}">
+            </div>
+
+            <button id="applySettings"
+                    class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg
+                           transition duration-300 ease-in-out transform hover:scale-105
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                Apply Settings
+            </button>
+            <div id="statusMessage" class="text-center text-sm mt-2 hidden"></div>
         </div>
     </div>
-    
+
+    <!-- Socket.IO client library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const faceBlurCheckbox = document.getElementById('faceBlur');
+            const plateBlurCheckbox = document.getElementById('plateBlur');
+            const blurIntensitySlider = document.getElementById('blurIntensity');
+            const intensityValueSpan = document.getElementById('intensityValue');
+            const applySettingsButton = document.getElementById('applySettings');
+            const statusMessage = document.getElementById('statusMessage');
+            const loadingIndicator = document.getElementById('loadingIndicator');
 
+            const inputVideo = document.getElementById('inputVideo');
+            const outputCanvas = document.getElementById('outputCanvas');
+            const outputContext = outputCanvas.getContext('2d');
 
-        const inputVideo = document.getElementById('inputVideo');
-        const outputCanvas = document.getElementById('outputCanvas');
-        const outputContext = outputCanvas.getContext('2d');
-        let socket;
-        let stream; 
-        // Update settings when controls change
-        document.getElementById('faceBlur').addEventListener('change', updateSettings);
-        document.getElementById('plateBlur').addEventListener('change', updateSettings);
-        document.getElementById('blurIntensity').addEventListener('input', function() {
-            document.getElementById('intensityValue').textContent = this.value;
-            updateSettings();
-        });
-        
-        function updateSettings() {
-            const settings = {
-                face_blur: document.getElementById('faceBlur').checked,
-                plate_blur: document.getElementById('plateBlur').checked,
-                blur_intensity: document.getElementById('blurIntensity').value
-            };
-            
-            // Update status indicators
-            document.getElementById('faceStatus').textContent = 
-                settings.face_blur ? 'Enabled' : 'Disabled';
-            document.getElementById('plateStatus').textContent = 
-                settings.plate_blur ? 'Enabled' : 'Disabled';
-            
-            // Send to server
-            fetch('/update_settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(settings)
-            });
-        }
+            let socket;
+            let stream; // To hold the MediaStream object from getUserMedia
+            let frameSendInterval; // To control sending frames to the server
 
-        async function setupWebcam() {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            inputVideo.srcObject = stream;
-            inputVideo.play();
-
-            // Adjust canvas size to match video stream
-            inputVideo.onloadedmetadata = () => {
-                outputCanvas.width = inputVideo.videoWidth;
-                outputCanvas.height = inputVideo.videoHeight;
-            };
-
-            // Setup WebSocket connection
-            // Use window.location.host for dynamic URL in Render
-            socket = io(`ws://${window.location.host}`); // Adjust if using HTTPS for wss://
-
-            socket.on('connect', () => {
-                console.log('Connected to WebSocket server');
-                sendVideoFrames(); // Start sending frames once connected
+            // Update intensity value display
+            blurIntensitySlider.addEventListener('input', function() {
+                intensityValueSpan.textContent = this.value;
             });
 
-            socket.on('disconnect', () => {
-                console.log('Disconnected from WebSocket server');
-            });
-
-            socket.on('processed_frame', (data) => {
-                // Receive base64 image data and draw on canvas
-                const img = new Image();
-                img.onload = () => {
-                    outputContext.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+            // Function to send settings to backend
+            async function updateSettings() {
+                const settings = {
+                    face_blur: faceBlurCheckbox.checked,
+                    plate_blur: plateBlurCheckbox.checked,
+                    // Ensure intensity is an integer and odd if it was an even number before sending
+                    blur_intensity: parseInt(blurIntensitySlider.value, 10)
                 };
-                img.src = data;
-            });
 
-            socket.on('settings_updated', (newSettings) => {
-                // Optional: Update local UI based on server-side settings changes
-                console.log('Settings updated from server:', newSettings);
-            });
+                statusMessage.classList.add('hidden'); // Hide previous message
+                applySettingsButton.disabled = true; // Disable button during request
+                applySettingsButton.textContent = 'Applying...';
 
-        } catch (err) {
-            console.error('Error accessing webcam: ', err);
-            // Display an error message to the user
-            document.getElementById('loadingIndicator').textContent = 'Error accessing webcam. Please ensure it\'s connected and allowed.';
-            document.getElementById('loadingIndicator').classList.remove('hidden');
-            document.getElementById('loadingIndicator').classList.add('text-red-500');
-        }
-    }
+                try {
+                    const response = await fetch('/update_settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(settings)
+                    });
 
-    function sendVideoFrames() {
-        if (!socket || !stream || socket.disconnected) return;
+                    if (response.ok) {
+                        statusMessage.textContent = 'Settings applied successfully!';
+                        statusMessage.classList.remove('hidden');
+                        statusMessage.classList.add('text-green-500');
+                    } else {
+                        statusMessage.textContent = 'Failed to apply settings. Please try again.';
+                        statusMessage.classList.remove('hidden');
+                        statusMessage.classList.add('text-red-500');
+                    }
+                } catch (error) {
+                    console.error('Error updating settings:', error);
+                    statusMessage.textContent = 'Network error or server unreachable.';
+                    statusMessage.classList.remove('hidden');
+                    statusMessage.classList.add('text-red-500');
+                } finally {
+                    applySettingsButton.disabled = false; // Re-enable button
+                    applySettingsButton.textContent = 'Apply Settings';
+                }
+            }
 
-        // Capture frame from the hidden video element and send
-        outputContext.drawImage(inputVideo, 0, 0, outputCanvas.width, outputCanvas.height);
-        const dataURL = outputCanvas.toDataURL('image/jpeg', 0.8); // Convert canvas to JPEG base64
+            // Event listener for the Apply Settings button
+            applySettingsButton.addEventListener('click', updateSettings);
 
-        socket.emit('video_frame', dataURL);
+            // --- WebSocket and Webcam Logic ---
+            async function setupWebcamAndSocket() {
+                try {
+                    // 1. Get user media (webcam)
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    inputVideo.srcObject = stream;
+                    inputVideo.play();
 
-        // Send frames at a regular interval (e.g., 30ms for ~30fps)
-        setTimeout(sendVideoFrames, 30);
-    }
+                    loadingIndicator.classList.add('hidden'); // Hide loading message on success
 
-    // Call this function when the page loads
-    setupWebcam();
+                    // Adjust canvas size to match video stream's actual dimensions
+                    inputVideo.onloadedmetadata = () => {
+                        outputCanvas.width = inputVideo.videoWidth;
+                        outputCanvas.height = inputVideo.videoHeight;
+                    };
+
+                    // 2. Establish Socket.IO connection
+                    // Use window.location.host to dynamically connect to the Render service URL
+                    // Use `wss://` if your Render service is configured for HTTPS (which it should be in production)
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    socket = io(`${protocol}//${window.location.host}`);
+
+                    socket.on('connect', () => {
+                        console.log('Connected to WebSocket server');
+                        // Start sending frames once connected
+                        // Send frames approximately 30 times per second
+                        frameSendInterval = setInterval(sendVideoFrame, 33); // ~30 FPS
+                    });
+
+                    socket.on('disconnect', () => {
+                        console.log('Disconnected from WebSocket server');
+                        clearInterval(frameSendInterval); // Stop sending frames on disconnect
+                    });
+
+                    // 3. Handle processed frames received from the server
+                    socket.on('processed_frame', (data) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            // Draw the processed image onto the canvas
+                            outputContext.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+                        };
+                        img.src = data; // The base64 image data
+                    });
+
+                    // Optional: Listen for settings updates from the server (e.g., if another client changes them)
+                    socket.on('settings_updated', (newSettings) => {
+                        console.log('Settings updated from server:', newSettings);
+                        // You could update UI elements here to reflect server-side changes
+                        faceBlurCheckbox.checked = newSettings.face_blur;
+                        plateBlurCheckbox.checked = newSettings.plate_blur;
+                        blurIntensitySlider.value = newSettings.blur_intensity;
+                        intensityValueSpan.textContent = newSettings.blur_intensity;
+                    });
+
+                } catch (err) {
+                    console.error('Error accessing webcam or connecting to server: ', err);
+                    // Display error message to the user
+                    loadingIndicator.textContent = `Error: ${err.name}. Please ensure webcam access is granted.`;
+                    loadingIndicator.classList.remove('hidden');
+                    loadingIndicator.classList.add('text-red-500');
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop()); // Stop stream if error occurs after starting
+                    }
+                }
+            }
+
+            // Function to capture a frame from the video and send it via WebSocket
+            function sendVideoFrame() {
+                if (!socket || socket.disconnected || !inputVideo.srcObject) {
+                    clearInterval(frameSendInterval); // Stop trying to send frames
+                    return;
+                }
+
+                // Create a temporary canvas to draw the video frame and convert it to base64
+                // Use a smaller size for performance if full resolution isn't critical
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = inputVideo.videoWidth;
+                tempCanvas.height = inputVideo.videoHeight;
+                const tempContext = tempCanvas.getContext('2d');
+
+                tempContext.drawImage(inputVideo, 0, 0, tempCanvas.width, tempCanvas.height);
+                // Convert canvas content to JPEG base64 string, lower quality for faster transmission
+                const dataURL = tempCanvas.toDataURL('image/jpeg', 0.6); // 0.6 quality for faster transmission
+
+                // Emit the frame data to the server
+                socket.emit('video_frame', dataURL);
+            }
+
+            // Start the webcam and socket connection when the page loads
+            setupWebcamAndSocket();
+        });
     </script>
 </body>
 </html>
